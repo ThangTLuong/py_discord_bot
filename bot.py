@@ -12,7 +12,7 @@ class Discord_Bot():
   
   def __init__(self) -> None:
     self._env = dotenv_values('.env')
-    self._TOKEN = self._env['TOKEN']
+    self._TOKEN = self._env['DISCORD_TOKEN']
     
   def start(self) -> None:
     self.client.run(self._TOKEN)
