@@ -7,7 +7,7 @@ from selenium.webdriver.common.by import By
 
 class Twitter():
   def __init__(self) -> None:
-    self._ENV: dict[str, str | None] = dv('../../.env')
+    self._ENV: dict[str, str | None] = dv('../.env')
     self._LOGIN_PAGE: str = 'https://twitter.com/login'
     self._tweet_url: str | None = None
     
@@ -15,6 +15,9 @@ class Twitter():
     op.add_argument('headless')
     
     self._driver = webdriver.Chrome(options=op)
+    
+  def __del__(self) -> None:
+    self.quit()
     
   def start(self) -> str:
     self._driver.get(self._LOGIN_PAGE)
