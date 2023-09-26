@@ -6,26 +6,42 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 
 class Twitter:
-  def __init__(self):
-    self._ENV = dv('../.env')
+  def __init__(self) -> None:
+    self._ENV = dv('.env')
     self._LOGIN_PAGE = 'https://twitter.com/login'
     self._list_of_tweets = []
     self._tweet_urls = []
     self._sent_tweet = None
 
-    op = webdriver.ChromeOptions()
-    op.add_argument('headless')
-
-    self._driver = webdriver.Chrome(options=op)
+    self._op = webdriver.ChromeOptions()
+    self._op.add_argument('--headless')
+    self._op.add_argument('--window-size=1920x1080')
 
   async def __aenter__(self):
     return self
 
-  async def __aexit__(self, exc_type, exc_value, traceback):
+  async def __aexit__(self, exc_type, exc_value, traceback) -> None:
     print('Shutting down driver')
     await self.quit()
 
-  async def start(self):
+    
+  async def start(self) -> bool:
+    """
+    Starts scraiping Twitter. It will take a few seconds to run.\n
+    The links of the tweets are accessible with the function get.urls().
+    
+    
+    Parameters
+    ---------------
+    None
+    
+    Returns
+    ---------------
+    boolean
+      True if the twitter page has been updated. \n
+      False if the twitter page has NOT been updated.
+    """
+    self._driver = webdriver.Chrome(options=self._op)
     self._driver.get(self._LOGIN_PAGE)
     await self._slp()
 
@@ -53,30 +69,24 @@ class Twitter:
     await self._get_media()
     await self._slp()
 
-    await self._get_tweet()
-
-  async def is_updated(self):
-    self._driver.refresh()
-    await self._slp()
-
     return await self._get_tweet()
 
-  async def _slp(self, seconds=3.0):
+  async def _slp(self, seconds=3.0) -> None:
     await asyncio.sleep(seconds)
 
-  async def _input_username(self, env):
+  async def _input_username(self, env) -> None:
     username = self._driver.find_element(By.XPATH, '//input[@name=\'text\']')
     username.send_keys(self._ENV[env])
     next_button = self._driver.find_element(By.XPATH, '//span[contains(text(), \'Next\')]')
     next_button.click()
 
-  async def _input_password(self):
+  async def _input_password(self) -> None:
     password = self._driver.find_element(By.XPATH, '//input[@name=\'password\']')
     password.send_keys(self._ENV['PASSWORD'])
     log_in = self._driver.find_element(By.XPATH, '//span[contains(text(), \'Log in\')]')
     log_in.click()
 
-  async def _input_search_item(self, env):
+  async def _input_search_item(self, env) -> None:
     search_box = self._driver.find_element(By.XPATH, '//input[@data-testid=\'SearchBox_Search_Input\']')
     search_box.send_keys(self._ENV[env])
     search_box.send_keys(Keys.ENTER)
@@ -86,33 +96,33 @@ class Twitter:
     people = self._driver.find_element(By.XPATH, '//span[contains(text(), \'People\')]')
     people.click()
 
-  async def _explore(self):
+  async def _explore(self) -> None:
     explore = self._driver.find_element(By.XPATH, '//a[@aria-label=\'Search and explore\']')
     explore.click()
 
-  async def _get_profile(self):
+  async def _get_profile(self) -> None:
     profile = self._driver.find_element(By.XPATH, '//*[@id=\'react-root\']/div/div/div[2]/main/div/div/div/div/div/div[3]/section/div/div/div[1]/div/div/div/div/div[2]/div[1]/div[1]/div/div[1]/a/div/div[1]/span/span[1]')
     profile.click()
 
-  async def _get_media(self):
+  async def _get_media(self) -> None:
     media = self._driver.find_element(By.XPATH, '//*[@id=\'react-root\']/div/div/div[2]/main/div/div/div/div/div/div[3]/div/div/nav/div/div[2]/div/div[3]/a/div/div/span')
     media.click()
 
-  async def _load_posts(self):
-    self._driver.execute_script('window.scrollTo(0,2500)')
+  async def _load_posts(self) -> None:
+    self._driver.execute_script('window.scrollTo(0,300)')
 
-  async def _get_posts(self):
+  async def _get_posts(self) -> None:
     self._list_of_tweets.clear()
     for i in range(1, 10):
       try:
+        await self._load_posts()
+        await self._slp(0.2)
         self._list_of_tweets.append(
           self._driver.find_element(By.XPATH,f'/html/body/div[1]/div/div/div[2]/main/div/div/div/div[1]/div/div[3]/div/div/section/div/div/div[{i}]/div/div/article/div/div/div[2]/div[2]/div[1]/div/div[1]/div/div/div[2]/div/div[3]/a').get_attribute('href'))
       except:
         continue
 
-  async def _get_tweet(self):
-    await self._load_posts()
-    await self._slp(1)
+  async def _get_tweet(self) -> bool:
     await self._get_posts()
 
     await self._load_tweets()
@@ -123,32 +133,34 @@ class Twitter:
     elif index == -1:
       self._tweet_urls = self._list_of_tweets
     else:
+      await self.quit()
       return False
 
     await self._save_tweets()
+    await self.quit()
     return True
 
-  async def _load_tweets(self):
+  async def _load_tweets(self) -> None:
     with open(f'{self._ENV["BOT_DB"]}/tweets.txt', 'r') as file:
       self._sent_tweet = file.read()
 
-  async def _save_tweets(self):
+  async def _save_tweets(self) -> None:
     with open(f'{self._ENV["BOT_DB"]}/tweets.txt', 'w') as file:
       file.write(str(self._list_of_tweets[0]))
 
-  async def _find_last_sent_tweet(self):
+  async def _find_last_sent_tweet(self) -> int:
     try:
       return self._list_of_tweets.index(self._sent_tweet)
     except ValueError:
       return -1
 
-  def get_urls(self):
+  def get_urls(self) -> list[str]:
     list_of_tweets = self._tweet_urls.copy()
     list_of_tweets.reverse()
 
     return list_of_tweets
 
-  async def quit(self):
+  async def quit(self) -> None:
     self._driver.quit()
 
 async def main():

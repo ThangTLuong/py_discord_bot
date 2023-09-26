@@ -11,8 +11,7 @@ from functions import Twitter
 class Al_news(cmd.Cog):
   def __init__(self, bot: cmd.Bot) -> None:
     self._bot: cmd.Bot = bot
-    self._initiated: bool = False
-    self._ENV: dict[str, str | None] = dv('../.env')
+    self._ENV: dict[str, str | None] = dv('.env')
     
     self._twitter: Twitter = Twitter()
     
@@ -31,15 +30,10 @@ class Al_news(cmd.Cog):
   async def on_ready(self):
     await self._bot.wait_until_ready()
       
-  @tasks.loop(minutes=15.0)
+  @tasks.loop(hours=1.0)
   async def al_updates(self):
-    if not self._initiated:
-      await self._twitter.start()
-      await self.send_tweets(self._ENV['CHANNEL'])
-      self._initiated = True
-    elif await self._twitter.is_updated():
-      await self.send_tweets(self._ENV['CHANNEL'])
-
+    if await self._twitter.start():
+      await self.send_tweets(int(self._ENV['CHANNEL']))
     
   @al_updates.before_loop
   async def before_al_updates(self):
