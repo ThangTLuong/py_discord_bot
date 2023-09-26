@@ -6,9 +6,7 @@ from discord.ext import commands as cmd
 from discord.app_commands import AppCommand
 from discord.ext.commands import MissingPermissions
 
-from functions import Twitter
-
-ENV = dv('../.env')
+ENV = dv('.env')
 TOKEN = ENV['DISCORD_TOKEN']
 
 class Discord_Bot(cmd.Bot):
