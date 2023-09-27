@@ -6,12 +6,13 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 
 class Twitter:
-  def __init__(self) -> None:
+  def __init__(self, account: str) -> None:
     self._ENV = dv('.env')
     self._LOGIN_PAGE = 'https://twitter.com/login'
-    self._list_of_tweets = []
-    self._tweet_urls = []
-    self._sent_tweet = None
+    self._account: dict[str, str | None] = self._ENV[account]
+    self._list_of_tweets: list[str] = []
+    self._tweet_urls: list[str] = []
+    self._sent_tweet: str = None
 
     self._op = webdriver.ChromeOptions()
     self._op.add_argument('--headless')
@@ -23,7 +24,6 @@ class Twitter:
   async def __aexit__(self, exc_type, exc_value, traceback) -> None:
     print('Shutting down driver')
     await self.quit()
-
     
   async def start(self) -> bool:
     """
@@ -57,11 +57,11 @@ class Twitter:
     await self._slp()
 
     try:
-      await self._input_search_item('AZUR_LANE')
+      await self._input_search_item(self._account)
     except Exception:
       await self._explore()
       await self._slp()
-      await self._input_search_item('AZUR_LANE')
+      await self._input_search_item(self._account)
     await self._slp()
 
     await self._get_profile()
@@ -86,9 +86,9 @@ class Twitter:
     log_in = self._driver.find_element(By.XPATH, '//span[contains(text(), \'Log in\')]')
     log_in.click()
 
-  async def _input_search_item(self, env) -> None:
+  async def _input_search_item(self, account: str) -> None:
     search_box = self._driver.find_element(By.XPATH, '//input[@data-testid=\'SearchBox_Search_Input\']')
-    search_box.send_keys(self._ENV[env])
+    search_box.send_keys(account)
     search_box.send_keys(Keys.ENTER)
 
     await self._slp(1)

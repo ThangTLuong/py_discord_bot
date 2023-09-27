@@ -16,7 +16,7 @@ class Al_news(cmd.Cog):
     self._ENV: dict[str, str | None] = dv('.env')
     self._timezone = pytz.timezone('America/Los_Angeles')
     
-    self._twitter: Twitter = Twitter()
+    self._twitter: Twitter = Twitter('JP_AZUR_LANE')
     
     self.al_updates.start()
     
@@ -37,10 +37,10 @@ class Al_news(cmd.Cog):
   async def al_updates(self):
     timenow = datetime.now(self._timezone).strftime("%m/%d/%Y %H:%M:%S %Z%z")
     if await self._twitter.start():
-      await self.send_tweets(int(self._ENV['CHANNEL']))
-      print(f'[{timenow}]: New tweet(s) sent.')
+      await self.send_tweets(int(self._ENV['JP_AL_CHANNEL']))
+      print(f'[{timenow}]: New Azur Lane tweet(s) posted.')
     else:
-      print(f'[{timenow}]: Everything is up to date. No tweet was sent.')
+      print(f'[{timenow}]: No new Azur Lane tweet detected.')
     
   @al_updates.before_loop
   async def before_al_updates(self):
@@ -50,7 +50,7 @@ class Al_news(cmd.Cog):
     channel = self._bot.get_channel(channel_id)
     
     for tweet in self._twitter.get_urls():
-      await channel.send(content=f'{self._ENV["ROLE"]}\n\n{tweet}')
+      await channel.send(content=f'{self._ENV["JP_AL_ROLE"]}\n\n{tweet}')
       await sleep(5)
       
     
