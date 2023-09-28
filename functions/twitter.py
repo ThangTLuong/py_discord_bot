@@ -1,9 +1,13 @@
 import asyncio
 from aiohttp import ClientSession
 from dotenv import dotenv_values as dv
+from datetime import datetime
+import pytz
+
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import NoSuchElementException
 
 class Twitter:
   def __init__(self, account: str) -> None:
@@ -13,6 +17,8 @@ class Twitter:
     self._list_of_tweets: list[str] = []
     self._tweet_urls: list[str] = []
     self._sent_tweet: str = None
+    
+    self._timezone = pytz.timezone('America/Los_Angeles')
 
     self._op = webdriver.ChromeOptions()
     self._op.add_argument('--headless')
@@ -101,8 +107,29 @@ class Twitter:
     explore.click()
 
   async def _get_profile(self) -> None:
-    profile = self._driver.find_element(By.XPATH, '//*[@id=\'react-root\']/div/div/div[2]/main/div/div/div/div/div/div[3]/section/div/div/div[1]/div/div/div/div/div[2]/div[1]/div[1]/div/div[1]/a/div/div[1]/span/span[1]')
-    profile.click()
+    max_retries: int = 3
+    retry_delay: int = 3
+    retry_additional_delay: int = 2
+    retry_count: int = 0
+    
+    while retry_count < max_retries:
+      try:
+        profile = self._driver.find_element(By.XPATH, '//*[@id=\'react-root\']/div/div/div[2]/main/div/div/div/div/div/div[3]/section/div/div/div[1]/div/div/div/div/div[2]/div[1]/div[1]/div/div[1]/a/div/div[1]/span/span[1]')
+        await self._slp(1)
+        profile.click()
+        break
+      except NoSuchElementException:
+        retry_count += 1
+        
+        if retry_count > max_retries:
+          timenow = datetime.now(self._timezone).strftime("%m/%d/%Y %H:%M:%S %Z%z")
+          print(f'[{timenow}] [Error]: Profile was not found. Unable to get profile. Aborting...')
+          break
+        
+        timenow = datetime.now(self._timezone).strftime("%m/%d/%Y %H:%M:%S %Z%z")
+        print(f'[{timenow}] [Error]: Profile was not found. Retrying...')
+        retry_delay += retry_additional_delay
+        await self._slp(retry_delay)
 
   async def _get_media(self) -> None:
     media = self._driver.find_element(By.XPATH, '//*[@id=\'react-root\']/div/div/div[2]/main/div/div/div/div/div/div[3]/div/div/nav/div/div[2]/div/div[3]/a/div/div/span')
