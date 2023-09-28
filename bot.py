@@ -1,5 +1,6 @@
 from typing import Any, Coroutine
 from dotenv import dotenv_values as dv
+import asyncio
 import discord
 
 from discord.ext import commands as cmd
@@ -17,7 +18,7 @@ class Discord_Bot(cmd.Bot):
       help_command=None
     )
     
-    self._cogs: list[str] = ['cogs.al_news']
+    self._cogs: list[str] = ['cogs.al_news', 'cogs.al_fanart']
   
   async def on_ready(self) -> None:
     print(f'Logged in as {self.user.name} ({self.user.id})')
@@ -30,4 +31,8 @@ class Discord_Bot(cmd.Bot):
     
 def main(args=None):
   bot = Discord_Bot()
-  bot.run(TOKEN)
+  
+  try:
+    bot.run(TOKEN)
+  except KeyboardInterrupt:
+    print('Ctrl+C pressed. Exiting gracefully')

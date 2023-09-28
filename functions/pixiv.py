@@ -2,7 +2,7 @@ import asyncio
 from bs4 import BeautifulSoup as bs
 import requests
 from requests import Response
-from requests_html import AsyncHTMLSession
+from requests_html import AsyncHTMLSession, HTML
 import random
 
 class Pixiv():
@@ -13,13 +13,15 @@ class Pixiv():
     
     self._session: AsyncHTMLSession = AsyncHTMLSession()
     self._response: Response | None = None
+    
+    self._image: bytes | None = None
+    self._file_name: str | None = None
   
   async def start(self) -> None:
     await self._get_response(f'{self._URL}{random.randint(self._first_page, self._last_page)}')
     
     soup = bs(self._response.html.html, 'html.parser')
     elements = soup.find_all('a', class_ = 'sc-d98f2c-0 sc-rp5asc-16 iUsZyY sc-cKRKFl ejjglN')
-    
     
     url: str = ''
     while True:
@@ -35,20 +37,29 @@ class Pixiv():
         continue
       
     image = image.replace('_master1200', '').replace('-master', '-original')
+
     file_extension: str = image.split('.')[-1]
+    file: str = image[image.rfind('/')+1:image.rfind(f'_p0.{file_extension}')]
+    self._file_name: str = file + '.' + file_extension
+    
     headers = {"Referer": f"{url}"}
 
     response = requests.get(image, headers=headers)
-    with open('image.' + file_extension, 'wb') as file:
-      file.write(response.content)
-    
+    self._image = response.content
+
     await self.quit()
     
   async def _get_response(self, url: str) -> None:
-    self._response = await self._session.get(url, timeout=30)
+    self._response = await self._session.get(url)
     await self._response.html.arender()
     
-  async def quit(self):
+  def get_image(self) -> bytes:
+    return self._image
+    
+  def get_name(self) -> str:
+    return self._file_name  
+    
+  async def quit(self) -> None:
     await self._session.close()
     
 async def main():
