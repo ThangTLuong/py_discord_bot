@@ -1,5 +1,4 @@
 import asyncio
-from aiohttp import ClientSession
 from dotenv import dotenv_values as dv
 from datetime import datetime
 import pytz
@@ -9,7 +8,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 
-class Twitter:
+class Twitter():
   def __init__(self, account: str) -> None:
     self._ENV = dv('.env')
     self._LOGIN_PAGE = 'https://twitter.com/login'
@@ -28,7 +27,6 @@ class Twitter:
     return self
 
   async def __aexit__(self, exc_type, exc_value, traceback) -> None:
-    print('Shutting down driver')
     await self.quit()
     
   async def start(self) -> bool:
