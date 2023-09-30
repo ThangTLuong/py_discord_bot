@@ -16,6 +16,7 @@ class Twitter():
     self._list_of_tweets: list[str] = []
     self._tweet_urls: list[str] = []
     self._sent_tweet: str = None
+    self._init: bool = False
     
     self._timezone = pytz.timezone('America/Los_Angeles')
 
@@ -48,33 +49,37 @@ class Twitter():
       False if the twitter page has NOT been updated.
     """
     self._driver.refresh()
-    await self._slp()
-    self._driver.get(self._LOGIN_PAGE)
-    await self._slp()
-
-    await self._input_username('EMAIL')
-    await self._slp()
-
-    try:
-      await self._input_password()
-    except Exception:
-      await self._input_username('USERNAME')
+    
+    if not self._init:
       await self._slp()
-      await self._input_password()
-    await self._slp()
-
-    try:
-      await self._input_search_item(self._account)
-    except Exception:
-      await self._explore()
+      self._driver.get(self._LOGIN_PAGE)
       await self._slp()
-      await self._input_search_item(self._account)
-    await self._slp()
 
-    await self._get_profile()
-    await self._slp()
-    await self._get_media()
-    await self._slp()
+      await self._input_username('EMAIL')
+      await self._slp()
+
+      try:
+        await self._input_password()
+      except Exception:
+        await self._input_username('USERNAME')
+        await self._slp()
+        await self._input_password()
+      await self._slp()
+
+      try:
+        await self._input_search_item(self._account)
+      except Exception:
+        await self._explore()
+        await self._slp()
+        await self._input_search_item(self._account)
+      await self._slp()
+
+      await self._get_profile()
+      await self._slp()
+      await self._get_media()
+      await self._slp()
+      
+      self._init = True
 
     return await self._get_tweet()
 

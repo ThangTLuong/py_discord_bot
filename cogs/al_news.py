@@ -1,23 +1,21 @@
 from asyncio import sleep
 from typing import Any, Coroutine
 from dotenv import dotenv_values as dv
-from datetime import datetime
 import random
-import pytz
 
 import discord
 from discord import app_commands as ac
 from discord.ext import commands as cmd, tasks
 
-from functions import Twitter
+from functions import Twitter, Time_Log
 
 class Al_news(cmd.Cog):
   def __init__(self, bot: cmd.Bot) -> None:
     self._bot: cmd.Bot = bot
     self._ENV: dict[str, str | None] = dv('.env')
-    self._timezone = pytz.timezone('America/Los_Angeles')
     
     self._twitter: Twitter = Twitter('JP_AZUR_LANE')
+    self._time: Time_Log = Time_Log()
     
     self.al_updates.start()
     
@@ -36,14 +34,14 @@ class Al_news(cmd.Cog):
       
   @tasks.loop(minutes = 15.0)
   async def al_updates(self):
-    timenow = datetime.now(self._timezone).strftime("%m/%d/%Y %H:%M:%S %Z%z")
+    await self._time.now()
     next_timer: int = random.randint(15, 60)
     
     if await self._twitter.start():
       await self.send_tweets(int(self._ENV['JP_AL_CHANNEL']))
-      print(f'[{timenow}]: New Azur Lane tweet(s) posted. The next scan will be in {next_timer} minutes')
+      await self._time.print_time(f'New Azur Lane tweet(s) posted. The next scan will be in {next_timer} minutes')
     else:
-      print(f'[{timenow}]: No new Azur Lane tweet detected. The next scan will be in {next_timer} minutes')
+      await self._time.print_time(f'No new Azur Lane tweet detected. The next scan will be in {next_timer} minutes')
       
     self.al_updates.change_interval(minutes = float(next_timer))
     
