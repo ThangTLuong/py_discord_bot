@@ -2,6 +2,7 @@ from typing import Any, Coroutine
 from dotenv import dotenv_values as dv
 import asyncio
 import discord
+import sys
 
 from discord.ext import commands as cmd
 from discord.app_commands import AppCommand
@@ -36,3 +37,11 @@ def main(args=None):
     bot.run(TOKEN)
   except KeyboardInterrupt:
     print('Ctrl+C pressed. Exiting gracefully')
+
+    al_news_cog = bot.get_cog('al_news')
+    if al_news_cog:
+      loop = asyncio.get_event_loop()
+      twitter = loop.run_until_complete(al_news_cog.get_twitter())
+      
+      if twitter:
+        loop.run_until_complete(twitter.quit())

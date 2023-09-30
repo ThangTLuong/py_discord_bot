@@ -22,6 +22,8 @@ class Twitter():
     self._op = webdriver.ChromeOptions()
     self._op.add_argument('--headless')
     self._op.add_argument('--window-size=1920x1080')
+    
+    self._driver = webdriver.Chrome(options=self._op)
 
   async def __aenter__(self):
     return self
@@ -45,7 +47,8 @@ class Twitter():
       True if the twitter page has been updated. \n
       False if the twitter page has NOT been updated.
     """
-    self._driver = webdriver.Chrome(options=self._op)
+    self._driver.refresh()
+    await self._slp()
     self._driver.get(self._LOGIN_PAGE)
     await self._slp()
 
@@ -158,11 +161,10 @@ class Twitter():
     elif index == -1:
       self._tweet_urls = self._list_of_tweets
     else:
-      await self.quit()
       return False
 
     await self._save_tweets()
-    await self.quit()
+    
     return True
 
   async def _load_tweets(self) -> None:
