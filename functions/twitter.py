@@ -48,7 +48,6 @@ class Twitter():
       True if the twitter page has been updated. \n
       False if the twitter page has NOT been updated.
     """
-    self._driver.refresh()
     
     if not self._init:
       await self._slp()
@@ -77,9 +76,12 @@ class Twitter():
       await self._get_profile()
       await self._slp()
       await self._get_media()
-      await self._slp()
       
       self._init = True
+    else:
+      self._driver.refresh()
+      
+    await self._slp()
 
     return await self._get_tweet()
 
