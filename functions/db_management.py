@@ -5,7 +5,7 @@ from pprint import pprint
 
 import asyncio
 
-class DB():
+class DB_Management():
   def __init__(self) -> None:
     self._ENV = dv('../.env')
     self._db = TinyDB(self._ENV['DB'])

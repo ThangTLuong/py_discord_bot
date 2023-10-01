@@ -4,7 +4,7 @@ from requests import Response
 import random
 import asyncio
 
-class Pixiv():
+class Danbooru():
   def __init__(self) -> None:
     self._BASE_URL: str = 'https://danbooru.donmai.us'
     self._URL: str = 'https://danbooru.donmai.us/posts?page={}&tags=azur_lane{}'
@@ -13,7 +13,7 @@ class Pixiv():
     self._image: bytes | None = None
     self._file_name: str | None = None
     
-  async def start(self) -> None:
+  async def start(self) -> tuple[str, bytes]:
     while True:
       try:
         page = await self._random_page()
@@ -35,6 +35,7 @@ class Pixiv():
     self._file_name: str = file + '.' + file_extension
     
     self._image = requests.get(image_url).content
+    return self._file_name, self._image
     
     # await self.save_image()
     
@@ -69,8 +70,8 @@ class Pixiv():
       file.write(self._image)
   
 async def main(args=None):
-  pix = Pixiv()
-  await pix.start()
+  dan = Danbooru()
+  await dan.start()
   
 if __name__ == '__main__':
   asyncio.run(main())
