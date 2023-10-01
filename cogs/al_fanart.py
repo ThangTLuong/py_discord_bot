@@ -15,6 +15,14 @@ class Al_fanart(cmd.Cog):
     self._ENV: dict[str, str | None] = dv('.env')
     self._time: Time_Log = Time_Log()
     
+    self._explosive_rate: int = 0
+    self._explosive_rate_limit: int = 30
+    self._explosive_limit_reached: bool = False
+    
+    self._parsing_rate: int = 0
+    self._parsing_rate_limit: int = 10
+    self._recent_reset: bool = False
+    
     self._danbooru: Danbooru = Danbooru()
     self._new_images: deque = deque()
     self._ready_images: deque = deque()
@@ -47,11 +55,34 @@ class Al_fanart(cmd.Cog):
     await self._bot.wait_until_ready()
     
   @tasks.loop(seconds=30.0)
-  async def replenishing_fanart(self):
+  async def replenishing_fanart(self) -> None:
+    if self._parsing_rate >= self._parsing_rate_limit:
+      self.replenishing_fanart.change_interval(seconds=60.0)
+      self._parsing_rate = 0
+      self._recent_reset = True
+      return
+    
+    if self._parsing_rate < self._parsing_rate_limit and self._recent_reset:
+      self.replenishing_fanart.change_interval(seconds=30.0)
+      self._recent_reset = False
+    
     await self.parse_images(5)
+    self._parsing_rate += 1
     
   @replenishing_fanart.before_loop
-  async def before_replenishing_fanart(self):
+  async def before_replenishing_fanart(self) -> None:
+    await self._bot.wait_until_ready()
+    
+  @tasks.loop(seconds=30.0)
+  async def al_art_bomb_cooldown(self) -> None:
+    if self._explosive_rate > 0:
+      self._explosive_rate -= 1
+      return
+    
+    self._explosive_limit_reached = False
+    
+  @al_art_bomb_cooldown.before_loop
+  async def before_al_art_bomb_cooldown(self) -> None:
     await self._bot.wait_until_ready()
     
   @cmd.command(name='alart')
@@ -63,26 +94,26 @@ class Al_fanart(cmd.Cog):
   @cmd.command(name='albomb')
   async def al_art_bomb(self, ctx) -> None:
     await self._time.now()
+    if self._explosive_rate >= self._explosive_rate_limit:
+      await self._time.print_time('The limit for the command \'>albomb\' has been reached.')
+      self._explosive_limit_reached = True
+      return
+    
+    if self._explosive_limit_reached:
+      await self._time.print_time(f'\'>albomb\' limit reached. Current rate: {self._explosive_rate}')
+      return
+    
+    async with self._lock:
+      # Get lock
+      self._explosive_rate += 1
+      # Release lock
+      
     await self.send_image(ctx, 5)
     await self._time.print_time('An AL bomb of fanart was launched.')
     
   async def send_image(self, ctx, number_of_loops: int) -> None:
     tasks: list[asyncio.Task] = []
     files: list[discord.File] = []
-    
-    # async with self._lock:
-    #   # Get lock
-    #   if len(self._ready_images) < number_of_loops:
-    #     self._ready_images, self._new_images = self._new_images, self._ready_images
-    #   # Release lock
-    
-    # All tasks must stop and check the condition, 
-    #   (len(self._ready_images)-(current task number * number_of_loops)) >= number_of_loops
-    # If the condition returns true for the first task, then it can continue executing
-    # If the condition returns false for the second task, it and the following tasks
-    #   must wait until the first task is done.
-    # Then run this line: self._ready_images, self._new_images = self._new_images, self._ready_images
-    # Then restart the check: (len(self._ready_images)-(current task number * number_of_loops)) >= number_of_loops
 
     async with self._condition:
       await self._condition.wait_for(lambda: len(self._ready_images) >= number_of_loops)
