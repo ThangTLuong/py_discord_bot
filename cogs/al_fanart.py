@@ -22,6 +22,7 @@ class Al_fanart(cmd.Cog):
     self._parsing_rate: int = 0
     self._parsing_rate_limit: int = 10
     self._recent_reset: bool = False
+    self._second_storage_is_full: bool = False
     
     self._danbooru: Danbooru = Danbooru()
     self._new_images: deque = deque()
@@ -31,6 +32,8 @@ class Al_fanart(cmd.Cog):
     self._condition: asyncio.Condition = asyncio.Condition()
     
     self.replenishing_fanart.start()
+    self.al_art_bomb_cooldown.start()
+    self.storage_is_full.start()
     
   @cmd.Cog.listener()
   async def on_ready(self) -> None:
@@ -84,15 +87,43 @@ class Al_fanart(cmd.Cog):
   @al_art_bomb_cooldown.before_loop
   async def before_al_art_bomb_cooldown(self) -> None:
     await self._bot.wait_until_ready()
+  
+  @tasks.loop(minutes=10.0)
+  async def storage_is_full(self) -> None:
+    
+    async with self._lock:
+      # Get lock
+      if len(self._ready_images) >= 100 and len(self._new_images) >= 100:
+        await self._time.now()
+        await self._time.print_time('Both storage is full.')
+        return
+      # Release lock
+    
+    if self._second_storage_is_full and self._explosive_rate <= 0:
+      await self._time.now()
+      async with self._lock:
+        # Get lock
+        self._ready_images, self._new_images = self._new_images, self._ready_images
+        # Release lock
+      await self._time.print_time('No activity detected. Switching...')
+  
+  @storage_is_full.before_loop
+  async def before_storage_is_full(self) -> None:
+    await self._bot.wait_until_ready()
     
   @cmd.command(name='alart')
-  async def al_art(self, ctx) -> None:
+  async def al_art(self, ctx, tag: str | None = None) -> None:
     await self._time.now()
-    await self.send_image(ctx, 1)
+    
+    if tag:
+      await self.send_requested_image(ctx, 1, tag)
+    else:
+      await self.send_image(ctx, 1)
+      
     await self._time.print_time('An AL fanart was sent.')
 
   @cmd.command(name='albomb')
-  async def al_art_bomb(self, ctx) -> None:
+  async def al_art_bomb(self, ctx, tag: str | None = None) -> None:
     await self._time.now()
     if self._explosive_rate >= self._explosive_rate_limit:
       await self._time.print_time('The limit for the command \'>albomb\' has been reached.')
@@ -107,8 +138,12 @@ class Al_fanart(cmd.Cog):
       # Get lock
       self._explosive_rate += 1
       # Release lock
+    
+    if tag:
+      await self.send_requested_image(ctx, 5, tag)
+    else:
+      await self.send_image(ctx, 5)
       
-    await self.send_image(ctx, 5)
     await self._time.print_time('An AL bomb of fanart was launched.')
     
   async def send_image(self, ctx, number_of_loops: int) -> None:
@@ -141,14 +176,34 @@ class Al_fanart(cmd.Cog):
       
     await ctx.channel.send(files=files)
     
+  async def send_requested_image(self, ctx, number_of_loops: int, tag: str) -> None:
+    tasks: list[asyncio.Task] = []
+    files: list[discord.File] = []
+    
+    for _ in range(number_of_loops):
+      task = asyncio.create_task(self.fetch_and_process_image(tag))
+      tasks.append(task)
+      
+    results = await asyncio.gather(*tasks)
+    
+    for file_name, image in results:
+      file = discord.File(image, filename=file_name)
+      files.append(file)
+      
+    await ctx.channel.send(files=files)
+    
   async def parse_images(self, limit: int = 0) -> None:
     images_to_get: int
 
     async with self._lock:
       images_to_get = min(100 - len(self._new_images), limit if limit else 10)
     
+    # Returns in new_images is full
     if images_to_get <= 0:
+      self._second_storage_is_full = True
       return
+    
+    self._second_storage_is_full = False
     
     await self._time.now()
     await self._time.print_time('Resupplying fanarts...')
@@ -171,6 +226,10 @@ class Al_fanart(cmd.Cog):
       
     await self._time.now()
     await self._time.print_time('Resupplying fanarts complete.')
+  
+  async def fetch_and_process_image(self, tag: str | None = None) -> tuple[str, BytesIO]:
+    file_name, image = await self._danbooru.start(tag)
+    return await self.process_image(file_name, image)
       
   async def process_image(self, file_name: str, image: bytes) -> tuple[str, BytesIO]:
     return file_name, BytesIO(image)

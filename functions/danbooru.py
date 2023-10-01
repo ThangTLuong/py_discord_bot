@@ -4,6 +4,9 @@ from requests import Response
 import random
 import asyncio
 
+from thefuzz import fuzz
+from thefuzz import process
+
 class Danbooru():
   def __init__(self) -> None:
     self._BASE_URL: str = 'https://danbooru.donmai.us'
@@ -13,11 +16,11 @@ class Danbooru():
     self._image: bytes | None = None
     self._file_name: str | None = None
     
-  async def start(self) -> tuple[str, bytes]:
+  async def start(self, tag: str | None = None) -> tuple[str, bytes]:
     while True:
       try:
         page = await self._random_page()
-        website: bs = await self._get_website(self._URL.format(page, await self._random_rating()))
+        website: bs = await self._get_website(self._URL.format(page, await self._random_rating(tag)))
         
         elements = website.find_all('a', class_ = 'post-preview-link')
         post = await self._random_post(len(elements))
@@ -53,9 +56,11 @@ class Danbooru():
     
     return post
   
-  async def _random_rating(self) -> str:
-    ratings: list[str] = ['general', 'questionable', 'sensitive']
-    rating: str = f'+rating%3A{ratings[random.randint(0, len(ratings)-1)]}+'
+  async def _random_rating(self, tag: str | None = None) -> str:
+    ratings: list[str] = ['general', 'questionable', 'sensitive', 'explicit']
+    best_match = process.extractOne(tag.lower(), ratings, scorer=fuzz.partial_ratio) if tag else None
+    # Excludes 'explicit' if tag is not given
+    rating: str = f'+rating%3A{best_match[0] if best_match and best_match[1] >= 60 else ratings[random.randint(0, len(ratings)-2)]}+'
     
     return rating
   
