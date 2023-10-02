@@ -1,3 +1,4 @@
+from typing import Any, Coroutine
 from dotenv import dotenv_values as dv
 from collections import deque
 import asyncio
@@ -24,16 +25,24 @@ class Al_fanart(cmd.Cog):
     self._recent_reset: bool = False
     self._second_storage_is_full: bool = False
     
+    self._storages_are_full: bool = False
+    
     self._danbooru: Danbooru = Danbooru()
     self._new_images: deque = deque()
     self._ready_images: deque = deque()
     self._lock = asyncio.Lock()
     
     self._condition: asyncio.Condition = asyncio.Condition()
+    self._semaphore: asyncio.Semaphore = asyncio.Semaphore(1)
     
     self.replenishing_fanart.start()
     self.al_art_bomb_cooldown.start()
     self.storage_is_full.start()
+    
+  def cog_unload(self) -> Coroutine[Any, Any, None]:
+    self.replenishing_fanart.stop()
+    self.al_art_bomb_cooldown.stop()
+    self.storage_is_full.stop()  
     
   @cmd.Cog.listener()
   async def on_ready(self) -> None:
@@ -55,7 +64,7 @@ class Al_fanart(cmd.Cog):
         self._ready_images.append((file_name, image))
       # Release lock
       
-    await self._bot.wait_until_ready()
+    await self._bot.wait_until_ready() 
     
   @tasks.loop(seconds=30.0)
   async def replenishing_fanart(self) -> None:
@@ -87,15 +96,19 @@ class Al_fanart(cmd.Cog):
   @al_art_bomb_cooldown.before_loop
   async def before_al_art_bomb_cooldown(self) -> None:
     await self._bot.wait_until_ready()
+    await asyncio.sleep(30)
   
-  @tasks.loop(minutes=10.0)
+  @tasks.loop(minutes=5.0)
   async def storage_is_full(self) -> None:
+    if self._storages_are_full:
+      return
     
     async with self._lock:
       # Get lock
       if len(self._ready_images) >= 100 and len(self._new_images) >= 100:
         await self._time.now()
         await self._time.print_time('Both storage is full.')
+        self._storages_are_full = True
         return
       # Release lock
     
@@ -110,6 +123,7 @@ class Al_fanart(cmd.Cog):
   @storage_is_full.before_loop
   async def before_storage_is_full(self) -> None:
     await self._bot.wait_until_ready()
+    await asyncio.sleep(300)
     
   @cmd.command(name='alart')
   async def al_art(self, ctx, tag: str | None = None) -> None:
@@ -160,7 +174,7 @@ class Al_fanart(cmd.Cog):
         task = asyncio.create_task(self.process_image(file_name, image))
         tasks.append(task)
       # Release lock
-      
+    self._storages_are_full = False  
     async with self._lock:
       if len(self._ready_images) < number_of_loops:
         print(f'There are {len(self._ready_images)} images left in self._ready_images. Switching...')
@@ -205,8 +219,6 @@ class Al_fanart(cmd.Cog):
     
     self._second_storage_is_full = False
     
-    await self._time.now()
-    await self._time.print_time('Resupplying fanarts...')
     tasks: list[asyncio.Task] = []
     
     for _ in range(images_to_get):
@@ -223,9 +235,6 @@ class Al_fanart(cmd.Cog):
         
         self._new_images.append((file_name, image))
       # Release lock
-      
-    await self._time.now()
-    await self._time.print_time('Resupplying fanarts complete.')
   
   async def fetch_and_process_image(self, tag: str | None = None) -> tuple[str, BytesIO]:
     file_name, image = await self._danbooru.start(tag)

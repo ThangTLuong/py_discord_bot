@@ -20,7 +20,7 @@ class Al_news(cmd.Cog):
     self.al_updates.start()
     
   def cog_unload(self) -> Coroutine[Any, Any, None]:
-    self.al_updates.cancel()
+    self.al_updates.stop()
   
   # @ac.command(name='al', description='Sends Azur Lane updates.')
   # async def al_news(self, interaction: discord.Interaction):

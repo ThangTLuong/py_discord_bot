@@ -19,7 +19,7 @@ class Discord_Bot(cmd.Bot):
       help_command=None
     )
     
-    self._cogs: list[str] = ['cogs.al_news', 'cogs.al_fanart']
+    self._cogs: list[str] = ['cogs.al_news', 'cogs.al_fanart', 'cogs.help']
   
   async def on_ready(self) -> None:
     print(f'Logged in as {self.user.name} ({self.user.id})')
