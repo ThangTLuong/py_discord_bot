@@ -2,6 +2,7 @@ from typing import Any, Coroutine
 from dotenv import dotenv_values as dv
 from collections import deque
 import asyncio
+import math
 from io import BytesIO
 
 import discord
@@ -66,8 +67,11 @@ class Al_fanart(cmd.Cog):
       
     await self._bot.wait_until_ready() 
     
-  @tasks.loop(seconds=30.0)
+  @tasks.loop(minutes=1.0)
   async def replenishing_fanart(self) -> None:
+    if self._storages_are_full or self._second_storage_is_full:
+      return
+    
     if self._parsing_rate >= self._parsing_rate_limit:
       self.replenishing_fanart.change_interval(seconds=60.0)
       self._parsing_rate = 0
@@ -85,7 +89,7 @@ class Al_fanart(cmd.Cog):
   async def before_replenishing_fanart(self) -> None:
     await self._bot.wait_until_ready()
     
-  @tasks.loop(seconds=30.0)
+  @tasks.loop(minutes=1.0)
   async def al_art_bomb_cooldown(self) -> None:
     if self._explosive_rate > 0:
       self._explosive_rate -= 1
@@ -119,6 +123,7 @@ class Al_fanart(cmd.Cog):
         self._ready_images, self._new_images = self._new_images, self._ready_images
         # Release lock
       await self._time.print_time('No activity detected. Switching...')
+      self._second_storage_is_full = False
   
   @storage_is_full.before_loop
   async def before_storage_is_full(self) -> None:
@@ -146,6 +151,10 @@ class Al_fanart(cmd.Cog):
     
     if self._explosive_limit_reached:
       await self._time.print_time(f'\'>albomb\' limit reached. Current rate: {self._explosive_rate}')
+      embed = discord.Embed()
+      embed.add_field(name='', value=f'I\'m sorry. This one must take a breather. Will be back in {math.floor(self._explosive_rate)} min...')
+      embed.set_image(url='https://img-9gag-fun.9cache.com/photo/aR7qQZQ_460s.jpg')
+      await ctx.channel.send(embed=embed)
       return
     
     async with self._lock:
@@ -179,6 +188,7 @@ class Al_fanart(cmd.Cog):
       if len(self._ready_images) < number_of_loops:
         print(f'There are {len(self._ready_images)} images left in self._ready_images. Switching...')
         self._ready_images, self._new_images = self._new_images, self._ready_images
+        self._second_storage_is_full = False
       else:
         print(f'There are {len(self._ready_images)} images left in self._ready_images.')
       
@@ -220,7 +230,7 @@ class Al_fanart(cmd.Cog):
     self._second_storage_is_full = False
     
     tasks: list[asyncio.Task] = []
-    
+
     for _ in range(images_to_get):
       task = asyncio.create_task(self._danbooru.start())
       tasks.append(task)

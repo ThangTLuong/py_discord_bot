@@ -1,3 +1,4 @@
+from typing import Any
 from bs4 import BeautifulSoup as bs
 import requests
 from requests import Response
@@ -58,10 +59,17 @@ class Danbooru():
   
   async def _random_rating(self, tag: str | None = None) -> str:
     ratings: list[str] = ['general', 'questionable', 'sensitive', 'explicit']
-    best_match = process.extractOne(tag.lower(), ratings, scorer=fuzz.partial_ratio) if tag else None
+    best_match: Any = None
+
+    if tag and len(tag) == 1:
+      first_letter_dictionary: dict[str, str] = {each_rating[0]: each_rating for each_rating in ratings}
+      best_match = [first_letter_dictionary.get(tag), 100] if tag and tag in list(first_letter_dictionary.keys()) else None
+    else:
+      best_match = process.extractOne(tag.lower(), ratings, scorer=fuzz.partial_ratio) if tag else None
+    
     # Excludes 'explicit' if tag is not given
     rating: str = f'+rating%3A{best_match[0] if best_match and best_match[1] >= 60 else ratings[random.randint(0, len(ratings)-2)]}+'
-    
+
     return rating
   
   async def get_image(self) -> bytes:

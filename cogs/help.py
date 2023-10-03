@@ -47,9 +47,10 @@ class Help(cmd.Cog):
                           in the fanart with the specified rating.',
                     inline=False)
     embed.add_field(name=f'Ratings: **general; questionable; sensitive; explicit**',
-                    value='This one believes that these ratings need no explanation.',
+                    value='This one believes that these ratings need no explanation. The user may use only the first\
+                          letter of the rating.',
                     inline=False)
-    embed.add_field(name=f'Example: ', value=f'```>{command}```\nor```>{command} general```', inline=False)
+    embed.add_field(name=f'Example: ', value=f'```>{command}```\nor```>{command} g```', inline=False)
     embed.set_image(url='https://konachan.com/image/7943261e4406920986a4fb2a6b684bd4/Konachan.com%20-%20317174%20animal_ears%20anthropomorphism%20azur_lane%20blue_eyes%20breasts%20cleavage%20foxgirl%20gray_hair%20long_hair%20multiple_tails%20shinano_%28azur_lane%29%20signed%20tail%20wsman.jpg')
     
     await ctx.channel.send(embed=embed)
@@ -62,9 +63,10 @@ class Help(cmd.Cog):
                           in the fanart with the specified rating.',
                     inline=False)
     embed.add_field(name=f'Ratings: **general; questionable; sensitive; explicit**',
-                    value='This one believes that these ratings need no explanation.',
+                    value='This one believes that these ratings need no explanation. The user may use only the first\
+                          letter of the rating.',
                     inline=False)
-    embed.add_field(name=f'Example: ', value=f'```>{command}```\nor```>{command} general```', inline=False)
+    embed.add_field(name=f'Example: ', value=f'```>{command}```\nor```>{command} g```', inline=False)
     embed.set_image(url='https://konachan.com/image/7943261e4406920986a4fb2a6b684bd4/Konachan.com%20-%20317174%20animal_ears%20anthropomorphism%20azur_lane%20blue_eyes%20breasts%20cleavage%20foxgirl%20gray_hair%20long_hair%20multiple_tails%20shinano_%28azur_lane%29%20signed%20tail%20wsman.jpg')
     
     await ctx.channel.send(embed=embed)

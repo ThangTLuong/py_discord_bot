@@ -22,12 +22,6 @@ class Al_news(cmd.Cog):
   def cog_unload(self) -> Coroutine[Any, Any, None]:
     self.al_updates.stop()
   
-  # @ac.command(name='al', description='Sends Azur Lane updates.')
-  # async def al_news(self, interaction: discord.Interaction):
-  #   for tweet in self._twitter.get_urls():
-  #     await interaction.response.send_message(content=tweet)
-  #     await sleep(5)
-  
   @cmd.Cog.listener()
   async def on_ready(self):
     await self._bot.wait_until_ready()
