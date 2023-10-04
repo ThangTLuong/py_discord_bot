@@ -1,9 +1,7 @@
 from typing import Any, Coroutine
 from dotenv import dotenv_values as dv
-from collections import deque
 import asyncio
 import math
-from PIL import Image, ImageDraw, ImageFont
 from time import perf_counter
 import requests 
 from io import BytesIO
@@ -11,6 +9,7 @@ from io import BytesIO
 import discord
 from discord import app_commands as ac
 from discord.ext import commands as cmd, tasks
+from discord.ext.commands import Context
 
 from functions import Danbooru, Time_Log, Discord_Stdout
 
@@ -18,21 +17,41 @@ class Al_fanart(cmd.Cog):
   def __init__(self, bot: cmd.Bot) -> None:
     self._bot: cmd.Bot = bot
     self._ENV: dict[str, str | None] = dv('.env')
+    
+    self._lock: asyncio.Lock = asyncio.Lock()
+    
+    self._fanart_rate: float = 0.0
+    self._fanart_rate_limit: float = 30.0
+    self._fanart_limit_reached: bool = False
+    
     self._time: Time_Log = Time_Log()
     self._out: Discord_Stdout = Discord_Stdout(self._bot)
     
     self._danbooru: Danbooru = Danbooru()
     
   def cog_unload(self) -> Coroutine[Any, Any, None]:
-    pass
+    self.resting.cancel()
     
   @cmd.Cog.listener()
   async def on_ready(self) -> None:
-    await self._bot.wait_until_ready() 
+    await self._bot.wait_until_ready()
+    self.resting.start()
+
+  @tasks.loop(minutes=1.0)
+  async def resting(self):
+    async with self._lock:
+      # Get Lock
+      if self._fanart_rate > 1:
+        self._fanart_rate -= 1
+      else:
+        self._fanart_rate = 0
+        self._fanart_limit_reached = False
 
   @cmd.command(name='alart')
-  async def al_art(self, ctx, tag: str | None = None) -> None:
+  async def al_art(self, ctx: Context, tag: str | None = None) -> None:
     await self._time.now()
+    if await self.is_exhausted(ctx, 0.2):
+      return
 
     results = await self.parse_image(1, tag)
     await self._out.send_file(ctx, results)
@@ -40,8 +59,10 @@ class Al_fanart(cmd.Cog):
     await self._time.print_time('An AL fanart was sent.')
 
   @cmd.command(name='albomb')
-  async def al_art_bomb(self, ctx, tag: str | None = None) -> None:
+  async def al_art_bomb(self, ctx: Context, tag: str | None = None) -> None:
     await self._time.now()
+    if await self.is_exhausted(ctx, 1):
+      return
 
     results = await self.parse_image(5, tag)
     await self._out.send_file(ctx, results)
@@ -65,6 +86,25 @@ class Al_fanart(cmd.Cog):
       
   async def process_image(self, file_name: str, image: bytes) -> tuple[str, BytesIO]:
     return file_name, BytesIO(image)
+  
+  async def is_exhausted(self, ctx, rate: float) -> bool:
+    if not self._fanart_limit_reached and self._fanart_rate < self._fanart_rate_limit:
+      async with self._lock:
+        # Get Lock
+        self._fanart_rate += rate
+        # Release Lock
+      return False
+    
+    self._time.now()
+    self._time.print_time(f'I\'m sorry. This one must take a breather. Will be back in {math.floor(self._fanart_rate)} min...')
+    embed = discord.Embed()
+    embed.add_field(name='', value=f'I\'m sorry. This one must take a breather. Will be back in {math.floor(self._fanart_rate)} min...', inline=False)
+    embed.set_image(url='https://img-9gag-fun.9cache.com/photo/aR7qQZQ_460s.jpg')
+
+    await self._out.send_embed(ctx, embed=embed)
+    
+    self._fanart_limit_reached = True
+    return True
     
 async def setup(bot: cmd.Bot) -> None:
   await bot.add_cog(Al_fanart(bot))

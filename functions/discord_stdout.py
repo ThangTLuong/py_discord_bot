@@ -17,7 +17,7 @@ class Discord_Stdout():
     if not (ctx or id):
       raise ValueError('Either \'ctx\' or \'id\' must be provided.')
     
-    channel
+    channel = None
     try:
       channel = self._bot.get_channel(int(id)) if id and id.isdigit() else None
     except ValueError as e:
@@ -126,6 +126,18 @@ class Discord_Stdout():
     embed.set_thumbnail(url=set_thumbnail) if set_thumbnail else None
 
     return embed
+  
+  async def send_embed(self, ctx: Context, embed: Embed, id: (int | str | None) = None) -> None:
+    if not (ctx or id):
+      raise ValueError('Either \'ctx\' or \'id\' must be provided.')
+    
+    channel = None
+    try:
+      channel = self._bot.get_channel(int(id)) if id and id.isdigit() else None
+    except ValueError as e:
+      raise ValueError(f'{e}')
+    
+    await channel.send(embed=embed) if channel else await ctx.send(embed=embed)
   
   async def send_file(self, ctx: Context, file: dict[str, BytesIO] | None = None, id: (int | str | None) = None) -> None:
     if not (ctx or id):
