@@ -143,7 +143,9 @@ class Discord_Stdout():
     if not (ctx or id):
       raise ValueError('Either \'ctx\' or \'id\' must be provided.')
     
-    list_of_files: list[discord.File] = []
+    bundles: list[dict[str, BytesIO]] = []
+    bundle: dict[str, BytesIO] = {}
+    tasks: list[asyncio.Task] = []
     
     channel = None
     try:
@@ -151,9 +153,29 @@ class Discord_Stdout():
     except ValueError as e:
       raise ValueError(f'{e}')
 
-    for file_name, image in file:
-      discord_file = discord.File(image, filename=file_name)
-      list_of_files.append(discord_file)
+    for i, (key, value) in enumerate(file):
+      bundle[key] = value
+      
+      if (i + 1) % 10 == 0:
+        bundles.append(bundle.copy())
+        bundle.clear()
+        
+    if bundle:
+      bundles.append(bundle.copy())
+
+    for bundle in bundles:
+      task = asyncio.create_task(self._bundle_files(ctx, bundle, channel))
+      tasks.append(task)
+      
+    await asyncio.gather(*tasks)
+      
+  async def _bundle_files(self, ctx: Context, file: dict[str, BytesIO], channel = None):
+    list_of_files: list[discord.File] = []
+
+    for file_name, image in file.items():
+      file = discord.File(image, filename=file_name)
+      list_of_files.append(file)
+      
     
     if len(list_of_files) > 1:
       await channel.send(files=list_of_files) if channel else await ctx.send(files=list_of_files)

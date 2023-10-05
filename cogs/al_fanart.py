@@ -61,13 +61,25 @@ class Al_fanart(cmd.Cog):
   @cmd.command(name='albomb')
   async def al_art_bomb(self, ctx: Context, tag: str | None = None) -> None:
     await self._time.now()
-    if await self.is_exhausted(ctx, 1):
+    if await self.is_exhausted(ctx, 1.0):
       return
 
     results = await self.parse_image(5, tag)
     await self._out.send_file(ctx, results)
 
     await self._time.print_time('An AL bomb of fanart was launched.')
+    
+  
+  @cmd.command(name='alairstrike')
+  async def al_art_airstrike(self, ctx: Context, *args: str):
+    await self._time.now()
+    if await self.is_exhausted(ctx, 30.0):
+      return
+    
+    results = await self.parse_image(30)
+    await self._out.send_file(ctx, results)
+    
+    await self._time.print_time('An AL air strike of fanart was launched.')
   
   async def parse_image(self, number_of_files: int, tag: str | None = None) -> dict[str, BytesIO]:
     tasks: list[asyncio.Task] = []
@@ -95,8 +107,8 @@ class Al_fanart(cmd.Cog):
         # Release Lock
       return False
     
-    self._time.now()
-    self._time.print_time(f'I\'m sorry. This one must take a breather. Will be back in {math.floor(self._fanart_rate)} min...')
+    await self._time.now()
+    await self._time.print_time(f'I\'m sorry. This one must take a breather. Will be back in {math.floor(self._fanart_rate)} min...')
     embed = discord.Embed()
     embed.add_field(name='', value=f'I\'m sorry. This one must take a breather. Will be back in {math.floor(self._fanart_rate)} min...', inline=False)
     embed.set_image(url='https://img-9gag-fun.9cache.com/photo/aR7qQZQ_460s.jpg')

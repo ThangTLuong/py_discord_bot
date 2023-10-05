@@ -7,6 +7,9 @@ from typing import Any
 from thefuzz import fuzz
 from thefuzz import process
 
+import traceback
+import sys
+
 class Danbooru():
   def __init__(self) -> None:
     self._BASE_URL: str = 'https://danbooru.donmai.us'
@@ -16,6 +19,11 @@ class Danbooru():
     async with ClientSession() as session:
       image: bytes | None = None
       file_name: str | None = None
+      post: int | None = None
+      rating: str | None = None
+      page: int | None = None
+      url: str | None = None
+      
       while True:
         try:
           rating, page = await self._random_rating_and_pages(tag)
@@ -30,7 +38,11 @@ class Danbooru():
 
           break
         except Exception as e:
-          print(e)
+          exec_type, exc_obj, exc_tb = sys.exc_info()
+          line_number = exc_tb.tb_lineno
+          
+          print(f"Exception occurred on line {line_number}: {e} | {url}")
+          
           continue
 
       file_extension: str = image_url.split('.')[-1]
@@ -47,7 +59,7 @@ class Danbooru():
       return bs(await response.text(), 'html.parser')
 
   async def _random_post(self, number_of_elements: int) -> int:
-    post = random.randint(0, number_of_elements - 1)
+    post = random.randint(0, (number_of_elements - 1))
     return post
 
   async def _random_rating_and_pages(self, tag: str | None = None) -> tuple[str, int]:
