@@ -70,13 +70,13 @@ class Al_fanart(cmd.Cog):
     await self._time.print_time('An AL bomb of fanart was launched.')
     
   
-  @cmd.command(name='alairstrike')
-  async def al_art_airstrike(self, ctx: Context, *args: str):
+  @cmd.command(name='alstrike')
+  async def al_art_airstrike(self, ctx: Context, tag: str | None = None):
     await self._time.now()
-    if await self.is_exhausted(ctx, 30.0):
+    if await self.is_exhausted(ctx, 6.0):
       return
     
-    results = await self.parse_image(30)
+    results = await self.parse_image(30, tag)
     await self._out.send_file(ctx, results)
     
     await self._time.print_time('An AL air strike of fanart was launched.')

@@ -62,7 +62,7 @@ class DB_Management():
     self._db.close()
     
 async def main(args=None):
-  async with DB() as db:
+  async with DB_Management() as db:
     await db.print_db()
     
 if __name__ == '__main__':
