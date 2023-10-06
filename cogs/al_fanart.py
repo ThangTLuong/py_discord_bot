@@ -1,4 +1,5 @@
-from typing import Any, Coroutine
+import random
+from typing import Any, Coroutine, List, Tuple
 from dotenv import dotenv_values as dv
 import asyncio
 import math
@@ -11,7 +12,7 @@ from discord import app_commands as ac
 from discord.ext import commands as cmd, tasks
 from discord.ext.commands import Context
 
-from functions import Danbooru, Time_Log, Discord_Stdout
+from functions import Scrape, Danbooru, Konachan, Time_Log, Discord_Stdout
 
 class Al_fanart(cmd.Cog):
   def __init__(self, bot: cmd.Bot) -> None:
@@ -26,8 +27,8 @@ class Al_fanart(cmd.Cog):
     
     self._time: Time_Log = Time_Log()
     self._out: Discord_Stdout = Discord_Stdout(self._bot)
-    
-    self._danbooru: Danbooru = Danbooru()
+
+    self._scrape_websites: List = [Danbooru(), Konachan()]
     
   def cog_unload(self) -> Coroutine[Any, Any, None]:
     self.resting.cancel()
@@ -93,10 +94,11 @@ class Al_fanart(cmd.Cog):
     return results
     
   async def fetch_and_process_image(self, tag: str | None = None) -> dict[str, BytesIO]:
-    file_name, image = await self._danbooru.start(tag)
+    website: Scrape = random.choice(self._scrape_websites)
+    file_name, image = await website.start(tag)
     return await self.process_image(file_name, image)
       
-  async def process_image(self, file_name: str, image: bytes) -> tuple[str, BytesIO]:
+  async def process_image(self, file_name: str, image: bytes) -> Tuple[str, BytesIO]:
     return file_name, BytesIO(image)
   
   async def is_exhausted(self, ctx, rate: float) -> bool:
@@ -120,3 +122,6 @@ class Al_fanart(cmd.Cog):
     
 async def setup(bot: cmd.Bot) -> None:
   await bot.add_cog(Al_fanart(bot))
+  
+# Pogger
+# https://www.gran-turismo.com/gtsport/decal/4612329307908374528_1.png
