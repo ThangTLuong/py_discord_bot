@@ -153,7 +153,7 @@ class Twitter():
         await self._load_posts()
         await self._slp(0.2)
         self._list_of_tweets.append(
-          self._driver.find_element(By.XPATH,f'/html/body/div[1]/div/div/div[2]/main/div/div/div/div[1]/div/div[3]/div/div/section/div/div/div[{i}]/div/div/article/div/div/div[2]/div[2]/div[1]/div/div[1]/div/div/div[2]/div/div[3]/a').get_attribute('href'))
+          self._driver.find_element(By.XPATH,f'/html/body/div[1]/div/div/div[2]/main/div/div/div/div[1]/div/div[3]/div/div/section/div/div/div[{i}]/div/div/article/div/div/div[2]/div[2]/div[1]/div/div[1]/div/div/div[2]/div/div[3]/a').get_attribute('href').replace('//', '//fx'))
       except:
         continue
 

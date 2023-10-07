@@ -6,8 +6,6 @@ from discord import Colour, Embed, File
 from discord.ext import commands as cmd
 from discord.ext.commands import Context
 
-from typing import overload
-
 class Discord_Stdout():
   def __init__(self, bot: cmd.Bot) -> None:
     self._bot: cmd.Bot = bot
@@ -25,8 +23,7 @@ class Discord_Stdout():
     
     await channel.send(content=message) if channel else await ctx.send(content=message)
   
-  @overload
-  async def set_embed(self,
+  async def set_embed_properties(self,
                       colour: int | Colour | None = None,
                       color: int | Colour | None = None,
                       title: Any | None = None,
@@ -42,13 +39,12 @@ class Discord_Stdout():
     
     return embed
   
-  @overload
   async def set_embed(self,
                       add_fields: List[List[Union[Any, bool]]] | None = None,
                       clear_fields: bool = False,
                       insert_fields_at: List[List[Union[int, Any, bool]]] | None = None,
                       remove_author: bool = False,
-                      remove_fields: List[int] | bool = False,
+                      remove_fields: List[int] | None = None,
                       remove_footer: bool = False,
                       set_author: List[Any] | None = None,
                       set_fields_at: List[List[Union[int, Any, bool]]] | None = None,
@@ -97,33 +93,40 @@ class Discord_Stdout():
     # Add safe guard
     
     embed = embed if embed else Embed()
-    embed.remove_author() if remove_author else None
+    if remove_author: embed.remove_author()
     
-    for index in remove_fields:
-      embed.remove_field(index)
+    if remove_fields:
+      for index in remove_fields:
+        embed.remove_field(index)
       
-    embed.remove_footer() if remove_footer else None
-    embed.clear_fields() if clear_fields else None
-    
-    for list_of_fields in add_fields:
-      embed.add_field(name=list_of_fields[0], 
-                      value=list_of_fields[1], 
-                      inline=list_of_fields[2])
+    if remove_footer: embed.remove_footer()
       
-    for list_of_insert in insert_fields_at:
-      embed.insert_field_at(index=list_of_insert[0], 
-                            name=list_of_insert[1], 
-                            value=list_of_insert[2], 
-                            inline=list_of_insert[3])
+    if clear_fields: embed.clear_fields()
     
-    embed.set_author(name=set_author[0], url=set_author[1], icon_url=set_author[2]) if set_author else None
+    if add_fields:
+      for list_of_fields in add_fields:
+        embed.add_field(name=list_of_fields[0], 
+                        value=list_of_fields[1], 
+                        inline=list_of_fields[2])
     
-    for list_of_set in set_fields_at:
-      embed.set_field_at(index=list_of_set[0], name=list_of_set[1], value=list_of_set[2], inline=list_of_set[3])
+    if insert_fields_at:
+      for list_of_insert in insert_fields_at:
+        embed.insert_field_at(index=list_of_insert[0], 
+                              name=list_of_insert[1], 
+                              value=list_of_insert[2], 
+                              inline=list_of_insert[3])
+    
+    if set_author: embed.set_author(name=set_author[0], url=set_author[1], icon_url=set_author[2])
+    
+    if set_fields_at:
+      for list_of_set in set_fields_at:
+        embed.set_field_at(index=list_of_set[0], name=list_of_set[1], value=list_of_set[2], inline=list_of_set[3])
 
-    embed.set_footer(text=set_footer[0], icon_url=set_footer[1])
-    embed.set_image(url=set_image) if set_image else None
-    embed.set_thumbnail(url=set_thumbnail) if set_thumbnail else None
+    if set_footer: embed.set_footer(text=set_footer[0], icon_url=set_footer[1])
+      
+    if set_image: embed.set_image(url=set_image)
+      
+    if set_thumbnail: embed.set_thumbnail(url=set_thumbnail)
 
     return embed
   

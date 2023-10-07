@@ -68,13 +68,12 @@ class Al_fanart(cmd.Cog):
     results = await self.parse_image(5, tag)
     await self._out.send_file(ctx, results)
 
-    await self._time.print_time('An AL bomb of fanart was launched.')
-    
+    await self._time.print_time('An AL bomb of fanart was launched.')   
   
   @cmd.command(name='alstrike')
   async def al_art_airstrike(self, ctx: Context, tag: str | None = None):
     await self._time.now()
-    if await self.is_exhausted(ctx, 6.0):
+    if await self.is_exhausted(ctx, 10.0):
       return
     
     results = await self.parse_image(30, tag)
@@ -111,17 +110,17 @@ class Al_fanart(cmd.Cog):
     
     await self._time.now()
     await self._time.print_time(f'I\'m sorry. This one must take a breather. Will be back in {math.floor(self._fanart_rate)} min...')
-    embed = discord.Embed()
-    embed.add_field(name='', value=f'I\'m sorry. This one must take a breather. Will be back in {math.floor(self._fanart_rate)} min...', inline=False)
-    embed.set_image(url='https://img-9gag-fun.9cache.com/photo/aR7qQZQ_460s.jpg')
+    
+    embed = await self._out.set_embed(
+      add_fields=[['', f'I\'m sorry. This one must take a breather. Will be back in {math.floor(self._fanart_rate)} min...', False]],
+      set_image='https://img-9gag-fun.9cache.com/photo/aR7qQZQ_460s.jpg')
 
     await self._out.send_embed(ctx, embed=embed)
     
     self._fanart_limit_reached = True
     return True
     
+    
+    
 async def setup(bot: cmd.Bot) -> None:
   await bot.add_cog(Al_fanart(bot))
-  
-# Pogger
-# https://www.gran-turismo.com/gtsport/decal/4612329307908374528_1.png
