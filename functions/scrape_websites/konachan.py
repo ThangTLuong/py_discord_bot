@@ -34,7 +34,7 @@ class Konachan(Scrape):
           exec_type, exc_obj, exc_tb = sys.exc_info()
           line_number = exc_tb.tb_lineno
           
-          print(f"Exception occurred on line {line_number}: {e} | {image_url}")
+          print(f"Exception occurred on line {line_number}: {e} | {self._URL.format(page, rating)} | {len(elements)}")
           
           continue
           

@@ -87,6 +87,7 @@ class Al_fanart(cmd.Cog):
     for _ in range(number_of_files):
       task = asyncio.create_task(self.fetch_and_process_image(tag))
       tasks.append(task)
+      await asyncio.sleep(0.001)
       
     results: dict[str, BytesIO] = await asyncio.gather(*tasks)
     

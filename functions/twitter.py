@@ -23,6 +23,7 @@ class Twitter():
     self._op = webdriver.ChromeOptions()
     self._op.add_argument('--headless')
     self._op.add_argument('--window-size=1920x1080')
+    self._session_id: str | None = None
     
     self._driver = webdriver.Chrome(options=self._op)
 
@@ -48,8 +49,8 @@ class Twitter():
       True if the twitter page has been updated. \n
       False if the twitter page has NOT been updated.
     """
-    
     if not self._init:
+
       await self._slp()
       self._driver.get(self._LOGIN_PAGE)
       await self._slp()
@@ -144,7 +145,7 @@ class Twitter():
     media.click()
 
   async def _load_posts(self) -> None:
-    self._driver.execute_script('window.scrollTo(0,300)')
+    self._driver.execute_script('window.scrollTo(0,1000)')
 
   async def _get_posts(self) -> None:
     self._list_of_tweets.clear()
@@ -175,11 +176,11 @@ class Twitter():
     return True
 
   async def _load_tweets(self) -> None:
-    with open(f'{self._ENV["BOT_DB"]}/tweets.txt', 'r') as file:
+    with open(f'{self._ENV["DB"]}/tweets.txt', 'r') as file:
       self._sent_tweet = file.read()
 
   async def _save_tweets(self) -> None:
-    with open(f'{self._ENV["BOT_DB"]}/tweets.txt', 'w') as file:
+    with open(f'{self._ENV["DB"]}/tweets.txt', 'w') as file:
       file.write(str(self._list_of_tweets[0]))
 
   async def _find_last_sent_tweet(self) -> int:
