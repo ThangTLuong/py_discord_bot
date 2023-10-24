@@ -6,6 +6,7 @@ import random
 import discord
 from discord import app_commands as ac
 from discord.ext import commands as cmd, tasks
+from discord.ext.commands import Context
 
 from functions import Twitter, Time_Log
 
@@ -49,6 +50,20 @@ class Al_news(cmd.Cog):
     for tweet in self._twitter.get_urls():
       await channel.send(content=f'{self._ENV["JP_AL_ROLE"]}\n\n{tweet}')
       await sleep(5)
+  
+  @cmd.command(name='news')
+  async def news(self, ctx: Context):
+    embeds = []
+    
+    embed1 = discord.Embed(url='https://twitter.com/azurlane_staff/status/1716302676890411399')
+    embed1.set_image(url = 'https://pbs.twimg.com/media/F89ejn9bEAAWJsU?format=jpg&name=large')
+    embeds.append(embed1)
+    
+    embed2 = discord.Embed(url='https://twitter.com/azurlane_staff/status/1716302676890411399')
+    embed2.set_image(url = 'https://pbs.twimg.com/media/F89et8SbMAABPII?format=jpg&name=4096x4096')
+    embeds.append(embed2)
+    
+    await ctx.send(embeds=embeds)
   
   async def get_twitter(self) -> Twitter:
     return self._twitter  

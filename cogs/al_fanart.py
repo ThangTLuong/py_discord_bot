@@ -116,12 +116,10 @@ class Al_fanart(cmd.Cog):
       add_fields=[['', f'I\'m sorry. This one must take a breather. Will be back in {math.floor(self._fanart_rate)} min...', False]],
       set_image='https://img-9gag-fun.9cache.com/photo/aR7qQZQ_460s.jpg')
 
-    await self._out.send_embed(ctx, embed=embed)
+    await self._out.send_message(ctx=ctx, embed=embed)
     
     self._fanart_limit_reached = True
     return True
-    
-    
     
 async def setup(bot: cmd.Bot) -> None:
   await bot.add_cog(Al_fanart(bot))

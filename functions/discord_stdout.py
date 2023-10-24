@@ -9,50 +9,33 @@ from discord.ext.commands import Context
 class Discord_Stdout():
   def __init__(self, bot: cmd.Bot) -> None:
     self._bot: cmd.Bot = bot
-    self._condition: asyncio.Condition = asyncio.Condition()
-  
-  async def send_message(self, ctx: Context, message: str, id: (int | str | None) = None) -> None:
-    if not (ctx or id):
+    
+  async def send_message(self, **kwargs) -> None:
+    if 'ctx' not in kwargs and 'id' not in kwargs:
       raise ValueError('Either \'ctx\' or \'id\' must be provided.')
     
     channel = None
-    try:
-      channel = self._bot.get_channel(int(id)) if id and id.isdigit() else None
-    except ValueError as e:
-      raise ValueError(f'{e}')
+    if 'id' in kwargs and kwargs['id'].isdigit():
+      channel = self._bot.get_channel(int(kwargs.pop('id')))
+      kwargs.pop('ctx', None)
+    else:
+      channel = kwargs.pop('ctx')
     
-    await channel.send(content=message) if channel else await ctx.send(content=message)
+    await channel.send(**kwargs)
   
-  async def set_embed_properties(self,
-                      colour: int | Colour | None = None,
-                      color: int | Colour | None = None,
-                      title: Any | None = None,
-                      url: Any | None = None,
-                      description: Any | None = None,
-                      embed: Embed | None = None 
-                      ) -> Embed:
-    embed = embed if embed else Embed()
-    embed.colour = colour if colour else color
-    embed.title = title
-    embed.url = url
-    embed.description = description
+  async def set_embed_properties(self, **kwargs) -> Embed:
+    embed: Embed = kwargs.get('embed', Embed())
+    
+    if 'colour' in kwargs or 'color' in kwargs:
+      embed.colour = kwargs.get('colour', kwargs.get('color'))
+      
+    embed.title = kwargs.get('title')
+    embed.url = kwargs.get('url')
+    embed.description = kwargs.get('description')
     
     return embed
-  
-  async def set_embed(self,
-                      add_fields: List[List[Union[Any, bool]]] | None = None,
-                      clear_fields: bool = False,
-                      insert_fields_at: List[List[Union[int, Any, bool]]] | None = None,
-                      remove_author: bool = False,
-                      remove_fields: List[int] | None = None,
-                      remove_footer: bool = False,
-                      set_author: List[Any] | None = None,
-                      set_fields_at: List[List[Union[int, Any, bool]]] | None = None,
-                      set_footer: List[Any] | None = None,
-                      set_image: Any | None = None,
-                      set_thumbnail: Any | None = None,
-                      embed: Embed | None = None
-                      ) -> Embed:
+
+  async def set_embed(self, **kwargs) -> Embed:
     '''
     The order of operation: Removal -> Insert
     1st: embed
@@ -90,57 +73,52 @@ class Discord_Stdout():
     Embed - `discord.Embed`
     '''
     
-    # Add safe guard
+    embed: Embed = kwargs.get('embed', Embed())
+
+    if kwargs.get('remove_author', False):
+      embed.remove_author()
     
-    embed = embed if embed else Embed()
-    if remove_author: embed.remove_author()
-    
+    remove_fields = kwargs.get('remove_fields', None)
     if remove_fields:
       for index in remove_fields:
         embed.remove_field(index)
-      
-    if remove_footer: embed.remove_footer()
-      
-    if clear_fields: embed.clear_fields()
-    
-    if add_fields:
-      for list_of_fields in add_fields:
-        embed.add_field(name=list_of_fields[0], 
-                        value=list_of_fields[1], 
-                        inline=list_of_fields[2])
-    
-    if insert_fields_at:
-      for list_of_insert in insert_fields_at:
-        embed.insert_field_at(index=list_of_insert[0], 
-                              name=list_of_insert[1], 
-                              value=list_of_insert[2], 
-                              inline=list_of_insert[3])
-    
-    if set_author: embed.set_author(name=set_author[0], url=set_author[1], icon_url=set_author[2])
-    
-    if set_fields_at:
-      for list_of_set in set_fields_at:
-        embed.set_field_at(index=list_of_set[0], name=list_of_set[1], value=list_of_set[2], inline=list_of_set[3])
 
-    if set_footer: embed.set_footer(text=set_footer[0], icon_url=set_footer[1])
-      
-    if set_image: embed.set_image(url=set_image)
-      
-    if set_thumbnail: embed.set_thumbnail(url=set_thumbnail)
+    if kwargs.get('remove_footer', False):
+      embed.remove_footer()
+
+    if kwargs.get('clear_fields', False):
+      embed.clear_fields()
+
+    add_fields = kwargs.get('add_fields', None)
+    if add_fields:
+      for field in add_fields:
+        embed.add_field(name=field[0], value=field[1], inline=field[2])
+
+    insert_fields_at = kwargs.get('insert_fields_at', None)
+    if insert_fields_at:
+      for field in insert_fields_at:
+        embed.insert_field_at(index=field[0], name=field[1], value=field[2], inline=field[3])
+
+    set_author = kwargs.get('set_author', None)
+    if set_author:
+      embed.set_author(name=set_author[0], url=set_author[1], icon_url=set_author[2])
+
+    set_fields_at = kwargs.get('set_fields_at', None)
+    if set_fields_at:
+      for field in set_fields_at:
+        embed.set_field_at(index=field[0], name=field[1], value=field[2], inline=field[3])
+
+    set_footer = kwargs.get('set_footer', None)
+    if set_footer:
+      embed.set_footer(text=set_footer[0], icon_url=set_footer[1])
+
+    if kwargs.get('set_image'):
+      embed.set_image(url=kwargs['set_image'])
+
+    if kwargs.get('set_thumbnail'):
+      embed.set_thumbnail(url=kwargs['set_thumbnail'])
 
     return embed
-  
-  async def send_embed(self, ctx: Context, embed: Embed, id: (int | str | None) = None) -> None:
-    if not (ctx or id):
-      raise ValueError('Either \'ctx\' or \'id\' must be provided.')
-    
-    channel = None
-    try:
-      channel = self._bot.get_channel(int(id)) if id and id.isdigit() else None
-    except ValueError as e:
-      raise ValueError(f'{e}')
-    
-    await channel.send(embed=embed) if channel else await ctx.send(embed=embed)
   
   async def send_file(self, ctx: Context, file: dict[str, BytesIO] | None = None, id: (int | str | None) = None) -> None:
     if not (ctx or id):
